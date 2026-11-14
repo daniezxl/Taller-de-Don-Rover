@@ -1,0 +1,199 @@
+// Lado del profesor: abre un "peer" con el código de la sala y atiende a cada celular.
+
+import Peer, { type DataConnection } from 'peerjs';
+import type { HostEngine } from '../engine/room';
+import type { Signaling } from '../engine/settings';
+import { PEER_PREFIX, peerOptions, type ToHost, type ToPlayer } from './protocol';
+
+export interface NetStatus {
+  state: 'starting' | 'online' | 'reconnecting' | 'offline';
+  detail: string;
+  peers: number;
+}
+
+interface Entry {
+  conn: DataConnection;
+  playerId: string | null;
+  lastSeen: number;
+  lastSent: string;
+}
+
+export class HostNet {
+  private peer: Peer | null = null;
+  private conns = new Map<string, Entry>();
+  private unsub: (() => void) | null = null;
+  private hb: ReturnType<typeof setInterval> | null = null;
+  private beat = 0;
+  private destroyed = false;
+  private retries = 0;
+  status: NetStatus = { state: 'starting', detail: 'Abriendo la colonia…', peers: 0 };
+
+  constructor(
+    private engine: HostEngine,
+    private signaling: Signaling | null,
+    private onStatus: (s: NetStatus) => void,
+    private onCodeTaken: () => void,
+  ) {}
+
+  start() {
+    this.open();
+    this.unsub = this.engine.subscribe(() => this.pushViews(false));
+    this.hb = setInterval(() => this.heartbeat(), 4000);
+  }
+
+  stop() {
+    this.destroyed = true;
+    this.unsub?.();
+    if (this.hb) clearInterval(this.hb);
+    for (const e of this.conns.values()) e.conn.close();
+    this.conns.clear();
+    this.peer?.destroy();
+  }
+
+  private setStatus(state: NetStatus['state'], detail: string) {
+    this.status = { state, detail, peers: [...this.conns.values()].filter((e) => e.playerId).length };
+    this.onStatus(this.status);
+  }
+
+  private open() {
+    if (this.destroyed) return;
+    const peer = new Peer(PEER_PREFIX + this.engine.code, peerOptions(this.signaling));
+    this.peer = peer;
+    peer.on('open', () => {
+      this.retries = 0;
+      this.setStatus('online', 'Colonia en línea: los celulares pueden unirse');
+    });
+    peer.on('connection', (conn) => this.accept(conn));
+    peer.on('disconnected', () => {
+      if (this.destroyed || peer.destroyed) return;
+      this.setStatus('reconnecting', 'Reconectando la señal…');
+      setTimeout(() => {
+        if (!this.destroyed && !peer.destroyed && peer.disconnected) peer.reconnect();
+      }, 2000);
+    });
+    peer.on('error', (e: { type?: string }) => {
+      const type = e?.type ?? '';
+      if (this.destroyed) return;
+      if (type === 'unavailable-id') {
+        // El código todavía está registrado (por ejemplo, recargamos la página): reintentamos.
+        peer.destroy();
+        if (this.retries++ < 8) {
+          this.setStatus('reconnecting', 'Recuperando el código de la sala…');
+          setTimeout(() => this.open(), 2500);
+        } else {
+          this.onCodeTaken();
+        }
+        return;
+      }
+      if (type === 'network' || type === 'server-error' || type === 'socket-error' || type === 'socket-closed') {
+        this.setStatus('offline', 'Sin conexión: la misión sigue en modo demo con bots');
+        peer.destroy();
+        setTimeout(() => this.open(), 6000);
+        return;
+      }
+      if (type === 'browser-incompatible') {
+        this.setStatus('offline', 'Este navegador no soporta WebRTC');
+        return;
+      }
+      console.warn('[ixchel/net]', type, e);
+    });
+  }
+
+  private accept(conn: DataConnection) {
+    const entry: Entry = { conn, playerId: null, lastSeen: Date.now(), lastSent: '' };
+    conn.on('open', () => {
+      this.conns.set(conn.connectionId, entry);
+    });
+    conn.on('data', (raw) => this.onData(entry, raw as ToHost));
+    const drop = () => {
+      if (this.conns.get(conn.connectionId) !== entry) return;
+      this.conns.delete(conn.connectionId);
+      if (entry.playerId && ![...this.conns.values()].some((e) => e.playerId === entry.playerId)) {
+        this.engine.setConnected(entry.playerId, false);
+      }
+      this.setStatus(this.status.state, this.status.detail);
+    };
+    conn.on('close', drop);
+    conn.on('error', drop);
+  }
+
+  private send(conn: DataConnection, msg: ToPlayer) {
+    try {
+      if (conn.open) void conn.send(msg);
+    } catch (err) {
+      console.warn('[ixchel/net] no se pudo enviar', err);
+    }
+  }
+
+  private onData(entry: Entry, msg: ToHost) {
+    if (!msg || typeof msg !== 'object') return;
+    entry.lastSeen = Date.now();
+    if (!this.conns.has(entry.conn.connectionId)) this.conns.set(entry.conn.connectionId, entry);
+    switch (msg.t) {
+      case 'join': {
+        const res = this.engine.join(msg);
+        if (!res.ok || !res.data) {
+          this.send(entry.conn, { t: 'error', error: res.error ?? 'No se pudo entrar a la colonia.' });
+          return;
+        }
+        for (const [id, other] of this.conns) {
+          if (other !== entry && other.playerId === res.data.playerId) {
+            other.conn.close();
+            this.conns.delete(id);
+          }
+        }
+        entry.playerId = res.data.playerId;
+        entry.lastSent = '';
+        this.send(entry.conn, { t: 'joined', ...res.data });
+        this.engine.setConnected(res.data.playerId, true);
+        this.sendView(entry, true);
+        this.setStatus(this.status.state, this.status.detail);
+        break;
+      }
+      case 'act': {
+        if (!entry.playerId) {
+          this.send(entry.conn, { t: 'ack', rid: msg.rid, ok: false, error: 'Primero únete a la colonia.' });
+          return;
+        }
+        const res = this.engine.playerAction(entry.playerId, msg.action);
+        if (msg.rid) this.send(entry.conn, { t: 'ack', rid: msg.rid, ok: res.ok, error: res.error });
+        break;
+      }
+      case 'hb':
+        break;
+    }
+  }
+
+  private sendView(entry: Entry, force: boolean) {
+    if (!entry.playerId) return;
+    const view = this.engine.playerView(entry.playerId);
+    if (!view) {
+      this.send(entry.conn, { t: 'kicked' });
+      setTimeout(() => entry.conn.close(), 300);
+      return;
+    }
+    const key = JSON.stringify({ ...view, now: 0 });
+    if (!force && key === entry.lastSent) return;
+    entry.lastSent = key;
+    this.send(entry.conn, { t: 'view', view });
+  }
+
+  private pushViews(force: boolean) {
+    for (const e of this.conns.values()) this.sendView(e, force);
+  }
+
+  private heartbeat() {
+    const t = Date.now();
+    this.beat++;
+    for (const [id, e] of this.conns) {
+      if (t - e.lastSeen > 16000) {
+        e.conn.close();
+        this.conns.delete(id);
+        if (e.playerId) this.engine.setConnected(e.playerId, false);
+      }
+    }
+    // Cada 8 s reenviamos la vista: sincroniza relojes y confirma que el canal sigue vivo.
+    if (this.beat % 2 === 0) this.pushViews(true);
+    this.setStatus(this.status.state, this.status.detail);
+  }
+}
