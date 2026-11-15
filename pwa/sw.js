@@ -1,7 +1,6 @@
 /* Service worker de IXCHEL (plantilla: vite.config.ts inyecta la versión y la lista de archivos). */
 const VERSION = '__VERSION__';
 const PRECACHE = __PRECACHE__;
-const MODELS = 'ixchel-models-v1';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -16,7 +15,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ixchel-') && k !== VERSION && k !== MODELS).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ixchel-') && k !== VERSION).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -58,20 +57,5 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Modelo de visión de TensorFlow.js: se guarda tras el primer uso para escanear sin internet.
-  if (url.hostname === 'storage.googleapis.com' && url.pathname.includes('tfjs-models')) {
-    event.respondWith(
-      caches.open(MODELS).then((cache) =>
-        cache.match(req).then(
-          (hit) =>
-            hit ||
-            fetch(req).then((res) => {
-              if (res.ok) cache.put(req, res.clone());
-              return res;
-            }),
-        ),
-      ),
-    );
-  }
-  // Todo lo demás (señalización WebRTC, API de Claude) va directo a la red.
+  // Todo lo demás va directo a la red.
 });

@@ -1,8 +1,8 @@
 // Generadores de rompecabezas cooperativos.
 //
-// Regla de diseño: NADIE tiene toda la información. Cada especialidad recibe un dato
-// distinto y ese dato es imprescindible para encontrar la mejor decisión. Los números
-// cambian por tripulación (semilla distinta), así que copiar a otro equipo no sirve.
+// Regla de diseño: ningún especialista tiene toda la información. Cada especialidad guarda
+// un dato distinto y ese dato es imprescindible para encontrar la mejor decisión. Los
+// números cambian en cada partida (semilla distinta), así que no se puede memorizar.
 
 import { ROLES, ROLE_ORDER } from './content';
 import { makeRng, pick, randInt, randStep, shuffle, type Rng } from './rng';
@@ -188,8 +188,8 @@ function genElimination(cfg: ElimConfig, difficulty: Difficulty, rng: Rng): Puzz
       results,
       bestId: survivor.id,
       hints: [
-        'Cada especialidad puede descartar una opción con su dato. ¡Díganlo en voz alta y descarten juntos!',
-        `Empiecen con ${ROLES[hintAttr.role].name}: ${hintAttr.limitLabel.toLowerCase()} es ${limitText(hintAttr)}. ¿Qué opción no cumple?`,
+        'Cada especialista te dio un dato que descarta una opción. Revisa sus tarjetas una por una.',
+        `Empieza con ${ROLES[hintAttr.role].es}: ${hintAttr.limitLabel.toLowerCase()} es ${limitText(hintAttr)}. ¿Qué opción no cumple?`,
       ],
       solution: `${survivor.emoji} ${survivor.label} era la única opción que cumplía las cuatro condiciones.`,
     };
@@ -199,7 +199,7 @@ function genElimination(cfg: ElimConfig, difficulty: Difficulty, rng: Rng): Puzz
 
 const GREENHOUSE: ElimConfig = {
   title: 'Rescate de cultivos',
-  question: '¿Qué cultivo debe rescatar su tripulación?',
+  question: '¿Qué cultivo hay que rescatar?',
   pool: [
     { id: 'lechuga', emoji: '🥬', label: 'Lechuga', detail: 'Crece rápido. Ya se cultivó en la Estación Espacial.' },
     { id: 'papa', emoji: '🥔', label: 'Papa', detail: 'Mucha energía en cada planta.' },
@@ -244,7 +244,7 @@ const GREENHOUSE: ElimConfig = {
 
 const WATER: ElimConfig = {
   title: 'Nueva fuente de agua',
-  question: '¿Qué fuente de agua debe usar su sector?',
+  question: '¿Qué fuente de agua hay que usar?',
   pool: [
     { id: 'korolev', emoji: '🧊', label: 'Cráter Korolev', detail: 'Un cráter lleno de hielo.' },
     { id: 'arcadia', emoji: '🏔️', label: 'Glaciar de Arcadia', detail: 'Hielo enterrado bajo el polvo.' },
@@ -288,7 +288,7 @@ const WATER: ElimConfig = {
 
 const HABITAT: ElimConfig = {
   title: 'Diseño del nuevo módulo',
-  question: '¿Qué diseño de módulo debe construir su tripulación?',
+  question: '¿Qué diseño de módulo hay que construir?',
   pool: [
     { id: 'domo', emoji: '🔮', label: 'Domo geodésico', detail: 'Triángulos que reparten la presión.' },
     { id: 'inflable', emoji: '🎈', label: 'Cilindro inflable', detail: 'Ligero de transportar; se infla al llegar.' },
@@ -425,7 +425,7 @@ function genBudget(difficulty: Difficulty, rng: Rng): Puzzle {
           { label: sols > 1 ? `Energía total de los paneles en ${sols} sols` : 'Energía de los paneles por sol', value: prod, strong: true },
           { label: 'Batería de reserva', value: 'Solo emergencias' },
         ],
-        tip: 'Sumen lo que gasta cada sistema y compárenlo con esta producción.',
+        tip: 'Suma lo que gasta cada sistema y compáralo con esta producción.',
       },
       life: {
         role: 'life',
@@ -461,13 +461,13 @@ function genBudget(difficulty: Difficulty, rng: Rng): Puzzle {
     return {
       kind: 'budget',
       title: 'Plan de energía',
-      question: '¿Qué plan de energía debe seguir su sector durante la tormenta?',
+      question: '¿Qué plan de energía hay que seguir durante la tormenta?',
       intel,
       options: shuffle(rng, options),
       results,
       bestId,
       hints: [
-        'Sumen el gasto de los tres sistemas y compárenlo con la producción de los paneles.',
+        'Suma el gasto de los tres sistemas y compáralo con la producción de los paneles.',
         `Con todo normal la colonia gasta ${N} ⚡ por sol. ¿Qué sistema ahorra lo suficiente?`,
       ],
       solution: `La mejor opción era ${bestLabel}: ahorraba ${big} ⚡ por sol y bastaba sin apagar nada más.`,
@@ -568,13 +568,13 @@ function genRoute(difficulty: Difficulty, rng: Rng): Puzzle {
   return {
     kind: 'route',
     title: 'Expedición a la señal',
-    question: '¿Cómo debe investigar la señal su tripulación?',
+    question: '¿Cómo hay que investigar la señal?',
     intel,
     options,
     results,
     bestId,
     hints: [
-      'Primero revisen si la batería alcanza para ir y volver. Después sumen viaje + paradas y compárenlo con la tormenta.',
+      'Primero revisa si la batería alcanza para ir y volver. Después suma viaje + paradas y compáralo con la tormenta.',
       `El viaje de ida y vuelta sin paradas dura ${t0} horas.`,
     ],
     solution: orbiterCase

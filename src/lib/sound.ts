@@ -66,6 +66,11 @@ export const sfx = {
   whoosh: () => tone(200, 0.35, 'sine', 0.05, 0, 900),
 };
 
+/** Pitido corto con tono variable (radar de la antena). */
+export function beep(freq: number) {
+  tone(freq, 0.07, 'sine', 0.05);
+}
+
 export function isMuted() {
   return muted;
 }

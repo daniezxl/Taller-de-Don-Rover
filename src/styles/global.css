@@ -844,20 +844,6 @@ textarea.input {
   white-space: nowrap;
 }
 
-.toast {
-  position: fixed;
-  left: 50%;
-  top: max(16px, env(safe-area-inset-top));
-  transform: translateX(-50%);
-  z-index: 90;
-  max-width: min(560px, calc(100vw - 32px));
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.7rem 1rem;
-  animation: dropIn 0.4s cubic-bezier(0.2, 1.4, 0.4, 1) both;
-}
-
 /* ---------------- animaciones ---------------- */
 
 @keyframes drift {

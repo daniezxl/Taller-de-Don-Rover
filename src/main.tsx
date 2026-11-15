@@ -4,9 +4,7 @@ import '@fontsource-variable/nunito';
 import '@fontsource/space-mono/400.css';
 import '@fontsource/space-mono/700.css';
 import './styles/global.css';
-import './styles/landing.css';
-import './styles/host.css';
-import './styles/play.css';
+import './styles/game.css';
 import { App } from './App';
 import { registerServiceWorker } from './lib/pwa';
 

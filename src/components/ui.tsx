@@ -1,10 +1,8 @@
-// Piezas de interfaz reutilizables: íconos, logo, medidores, cronómetro, QR y más.
+// Piezas de interfaz reutilizables: íconos, logo, medidores, modales y más.
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import QRCode from 'qrcode';
-import { PHASE_FLOW, PHASE_LABELS, ROLES, SYSTEMS } from '../../shared/content';
-import type { Phase, RoleId, SystemId } from '../../shared/types';
-import { fmtTime, remaining, useTicker } from '../lib/clock';
+import { ROLES, SYSTEMS } from '../../shared/content';
+import type { RoleId, SystemId } from '../../shared/types';
 
 /* ---------------- íconos ---------------- */
 
@@ -100,7 +98,7 @@ export function Logo({ size = 'md', sub = true }: { size?: 'sm' | 'md' | 'lg' | 
         <span className="logo-word">
           I<span className="logo-x">X</span>CHEL
         </span>
-        {sub && <span className="logo-sub">The Classroom Space Mission</span>}
+        {sub && <span className="logo-sub">Colonia Marte 3D</span>}
       </div>
     </div>
   );
@@ -153,72 +151,6 @@ export function SystemMeter({ system, value, delta, size = 'md' }: { system: Sys
   );
 }
 
-/* ---------------- cronómetro ---------------- */
-
-export function Countdown({
-  deadline,
-  paused,
-  pausedRemaining,
-  total,
-  size = 76,
-  label,
-}: {
-  deadline: number | null;
-  paused: boolean;
-  pausedRemaining: number | null;
-  total: number;
-  size?: number;
-  label?: string;
-}) {
-  useTicker(250);
-  const ms = remaining(deadline, paused, pausedRemaining);
-  if (ms === null) return null;
-  const frac = Math.max(0, Math.min(1, ms / Math.max(1, total * 1000)));
-  const r = 42;
-  const c = 2 * Math.PI * r;
-  const urgent = !paused && ms < 10_000;
-  return (
-    <div className={`countdown ${urgent ? 'is-urgent' : ''} ${paused ? 'is-paused' : ''}`} style={{ width: size, height: size }} role="timer" aria-label={`Quedan ${fmtTime(ms)}`}>
-      <svg viewBox="0 0 100 100" width={size} height={size}>
-        <circle cx="50" cy="50" r={r} fill="rgba(11,15,56,.75)" stroke="rgba(255,255,255,.12)" strokeWidth="9" />
-        <circle
-          cx="50"
-          cy="50"
-          r={r}
-          fill="none"
-          stroke={urgent ? '#FF6B5B' : paused ? '#B69CFF' : '#FFC93C'}
-          strokeWidth="9"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - frac)}
-          transform="rotate(-90 50 50)"
-          style={{ transition: 'stroke-dashoffset .25s linear' }}
-        />
-      </svg>
-      <div className="countdown-text">
-        <b className="mono">{paused ? 'II' : fmtTime(ms)}</b>
-        {label && <span>{paused ? 'pausa' : label}</span>}
-      </div>
-    </div>
-  );
-}
-
-/* ---------------- QR ---------------- */
-
-export function QR({ value, size = 220 }: { value: string; size?: number }) {
-  const [svg, setSvg] = useState('');
-  useEffect(() => {
-    let alive = true;
-    QRCode.toString(value, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#211A4A', light: '#FFFFFF' } })
-      .then((s) => alive && setSvg(s))
-      .catch(() => alive && setSvg(''));
-    return () => {
-      alive = false;
-    };
-  }, [value]);
-  return <div className="qr" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: svg }} aria-label="Código QR para unirse" />;
-}
-
 /* ---------------- chips y etiquetas ---------------- */
 
 export function RoleChip({ role, short = false }: { role: RoleId; short?: boolean }) {
@@ -227,20 +159,6 @@ export function RoleChip({ role, short = false }: { role: RoleId; short?: boolea
     <span className="role-chip" style={{ '--c': r.color } as CSSProperties}>
       <span aria-hidden="true">{r.emoji}</span> {short ? r.specialty : r.name}
     </span>
-  );
-}
-
-export function PhaseStepper({ phase }: { phase: Phase }) {
-  const idx = PHASE_FLOW.indexOf(phase);
-  return (
-    <ol className="stepper" aria-label="Etapas de la misión">
-      {PHASE_FLOW.map((p, i) => (
-        <li key={p} className={i < idx ? 'done' : i === idx ? 'now' : ''}>
-          <span className="stepper-dot" />
-          <span className="stepper-label">{PHASE_LABELS[p]}</span>
-        </li>
-      ))}
-    </ol>
   );
 }
 

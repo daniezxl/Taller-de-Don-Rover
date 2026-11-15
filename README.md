@@ -1,19 +1,34 @@
-# IXCHEL — The Classroom Space Mission
+# IXCHEL — Colonia Marte 3D
 
-**Un salón. Varias tripulaciones. Un planeta por salvar.**
+Juego educativo en 3D (navegador, PC y celular) para niñas y niños de 8 a 14 años. Llegas a una colonia en Marte que tiene **seis problemas al mismo tiempo**. Cada problema vive en su propio lugar del mundo: caminas hasta él, ves la problemática con tus ojos, hablas con los especialistas, decides con datos y lo reparas con un minijuego.
 
-IXCHEL es una plataforma de aprendizaje multijugador nativa de IA que convierte cualquier salón de clases en una colonia espacial que debe sobrevivir. Los alumnos forman tripulaciones de cuatro, cada quien recibe una especialidad y una pieza secreta de información, la IA convierte objetos del salón en misiones científicas y las decisiones de cada tripulación cambian un planeta que comparte toda la clase.
+## Cómo se juega
 
-Es una **PWA que corre 100% en el navegador**: no hay servidor que instalar. El navegador del profesor (la pantalla del proyector) es el anfitrión del juego y los celulares de los alumnos se conectan directo por WebRTC escaneando un QR.
+1. **Explora**: camina por la colonia en tercera persona. Las columnas de luz marcan los lugares con problemas.
+2. **Problemática**: al llegar, IX (la IA de la colonia) explica qué está fallando (domos a oscuras, fuga de agua, paneles con polvo…).
+3. **Investiga**: habla con los 4 especialistas del lugar (💬). Cada quien tiene un dato distinto e imprescindible.
+4. **Decide**: examina los pedestales con las posibles soluciones, descarta (❌) las que no cumplen y elige la mejor.
+5. **Repara**: un minijuego en 3D pone en marcha tu decisión. Al terminar, el lugar se repara, aparece un edificio nuevo y la bitácora guarda lo aprendido.
 
-## Qué incluye
+No hay preguntas tipo quiz ni cámara/visión artificial: todo ocurre dentro del mundo.
 
-- **Presentación** (`#/`): la propuesta completa del proyecto, con ilustraciones originales.
-- **Consola del profesor** (`#/profe`): abordaje con QR, formación automática de tripulaciones, escáner del mundo, briefing, transmisiones cifradas, reto de tripulación, evento global, resultados y debrief. Incluye estado global del planeta, bitácora de IX, pistas, pausa y reporte descargable en CSV.
-- **App del alumno** (`#/jugar`): astronauta personalizable, descifrado de transmisiones con retos científicos, votación interna, bitácora de la tripulación, minijuego de emergencia, XP e insignias guardados en el dispositivo.
-- **6 misiones**: Greenhouse Rescue, The Water Crisis, Darkness Protocol, The Unknown Signal, Habitat Zero y The Final Colony. Cada tripulación recibe números distintos y cada rol tiene un dato imprescindible para encontrar la mejor decisión.
-- **Colonia persistente**: el mapa de MARS-01 cambia con los resultados, se desbloquean edificios y la colonia del grupo se guarda entre clases (con exportar e importar).
-- **Classroom Event Generator**: IX envía pistas si la clase tiene dificultades, desbloquea una emergencia bonus si todo es fácil y activa el protocolo de tripulación si un equipo participa poco.
+## Misiones y minijuegos
+
+| Lugar | Problemática | Minijuego |
+| --- | --- | --- |
+| 🌱 Invernaderos | El polvo tapa la luz y las plantas se marchitan | **Espejos de luz**: gira espejos para llevar el rayo de sol a cada cultivo (reflexión) |
+| 💧 Planta de agua | Fuga en el tanque principal | **Ruta del agua**: gira tubos para llevar agua del pozo, por el filtro de percloratos, al tanque; luego tapa fugas |
+| ☀️ Granja solar | Paneles cubiertos de polvo, apagón | **Rover limpiador**: maneja un rover con cepillo; los remolinos ayudan y las ráfagas ensucian |
+| 📡 Antena | Señal desconocida llena de ruido | **Sintoniza la señal**: apunta el plato guiándote por el sonido e iguala frecuencia y amplitud de la onda |
+| 🏗️ Zona de construcción | Llegan colonos y no hay refugio | **Constructor de módulos**: acomoda las piezas sobre suelo firme, conectadas con la esclusa |
+| 🌕 Centro de mando (final) | 10 sols sin ayuda de la Tierra | **10 sols**: corre por toda la colonia reparando fallas antes de que un sistema llegue a cero |
+
+Además hay 6 **descubrimientos** escondidos lejos de la colonia, ciclo de día y noche, y tres dificultades (Explorador, Cadete, Comandante). Los números de cada problema cambian en cada partida.
+
+## Controles
+
+- **Computadora**: W A S D / flechas para caminar, Shift para correr, Espacio para saltar, arrastrar con el mouse para girar la cámara, rueda para acercar, **E** para interactuar, **Tab** datos, **J** bitácora, **Esc** menú.
+- **Celular/tableta**: joystick a la izquierda, botón de acción y salto a la derecha, arrastrar para girar la cámara.
 
 ## Cómo correrlo
 
@@ -21,67 +36,26 @@ Requisitos: Node.js 20 o más reciente.
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:5173
+npm run build      # genera dist/ para cualquier hosting estático con HTTPS
+npm run typecheck
 ```
 
-Abre `http://localhost:5173/#/profe` en la computadora conectada al proyector. Sin alumnos, agrega **bots de práctica** desde la barra inferior para ver la misión completa.
-
-> Los celulares no pueden abrir `localhost`. Para jugar en un salón, publica la app (ver abajo) o abre IXCHEL con la IP de tu red local (`npm run dev` muestra la dirección `Network`). La cámara y la instalación como app requieren HTTPS.
-
-## Publicar
-
-```bash
-npm run build
-```
-
-Sube la carpeta `dist/` a cualquier hosting estático con HTTPS (Netlify, Vercel, GitHub Pages, Cloudflare Pages…). La app usa rutas con `#`, así que no necesita configuración extra. El service worker guarda la app para que abra sin conexión; sin internet funciona el modo demo con bots.
-
-## Inteligencia artificial
-
-- **Sin clave**: el escáner usa visión local con TensorFlow.js (COCO-SSD) y un detector de brillo para las fuentes de luz. La foto se analiza en el navegador y nunca sale del dispositivo. Las narrativas usan plantillas revisadas.
-- **Con Claude** (opcional): en **Ajustes** de la consola, pega una clave de API de Anthropic. IX usará visión multimodal para reconocer cualquier objeto, personalizará la historia, evaluará la creatividad de las bitácoras y escribirá el debrief. La clave se guarda solo en ese navegador; usa una clave con límite de gasto.
-
-Principio de diseño: **la IA narra, el motor decide**. Los recursos, las puntuaciones y las consecuencias los calcula un motor determinista; el modelo solo escribe dentro de plantillas con salidas estructuradas.
-
-## Conexión entre dispositivos
-
-Las conexiones usan WebRTC mediante [PeerJS](https://peerjs.com). El servidor público y gratuito de PeerJS solo presenta a los dispositivos; el juego viaja directo entre ellos y cifrado. Si tu escuela tiene su propio PeerServer, configúralo en **Ajustes → Servidor de señalización propio**.
-
-## Una clase de 40 minutos
-
-| Minutos | Etapa | Actividad |
-| --- | --- | --- |
-| 00–03 | Join the mission | Escanean el QR y crean su astronauta |
-| 03–05 | Crew assignment | IX forma tripulaciones y asigna roles |
-| 05–08 | World scanner | Un objeto del salón desbloquea la misión |
-| 08–15 | Discovery | Cada quien descifra su transmisión secreta |
-| 15–22 | Crew challenge | Los cuatro roles combinan datos y votan |
-| 22–30 | Global event | Toda la clase enfrenta una emergencia |
-| 30–35 | Mission results | La colonia cambia con las decisiones |
-| 35–40 | Debrief | IX explica lo aprendido y desbloquea progreso |
-
-También hay un ritmo de **demo rápida** (unos 10 minutos) para jueces y pruebas.
+La partida se guarda en el dispositivo. Es una PWA: después de la primera visita funciona sin conexión.
 
 ## Estructura
 
 ```
-shared/          Contenido, tipos y generadores de rompecabezas (compartido)
-src/engine/      Motor del juego, IA (Claude), visión local, colonias y ajustes
-src/net/         Conexión WebRTC entre el proyector y los celulares
-src/components/  Ilustraciones SVG (astronautas, IX, parches, mapa) y piezas de UI
-src/pages/       Presentación, consola del profesor y app del alumno
-pwa/sw.js        Plantilla del service worker (se genera en el build)
-public/          Manifiesto e íconos de la PWA
+shared/            Contenido (misiones, roles, datos NASA) y generadores de problemas con datos
+src/game/          Motor 3D (Three.js): mundo, jugador, cámara, misiones, guardado
+src/game/sites/    Cada lugar del mundo con su problemática y su minijuego
+src/ui/            Interfaz en React: título, HUD, diálogos, paneles
+src/components/    Ilustraciones SVG e íconos
 ```
 
-Scripts útiles: `npm run typecheck` (verificación de tipos) y `npm run icons` (regenera los íconos).
-
-## Tecnología
-
-React + TypeScript + Vite · PeerJS (WebRTC) · TensorFlow.js · Claude API (opcional) · SVG animado · PWA con service worker propio.
+Tecnología: React + TypeScript + Vite · Three.js · Web Audio · PWA.
 
 ## Notas
 
-- Los datos científicos se basan en publicaciones de la NASA. Los porcentajes de la colonia son valores de juego.
-- La señal de la misión *The Unknown Signal* es un recurso ficticio de la historia, no una afirmación sobre señales extraterrestres reales.
-- Ixchel es la diosa maya de la Luna y del tejido: cada tripulación es un hilo y, juntas, forman la colonia.
+- Los datos científicos se basan en publicaciones de la NASA; los porcentajes de la colonia son valores de juego.
+- La señal de la antena es un recurso ficticio de la historia, no una afirmación sobre señales extraterrestres reales.
